@@ -2,13 +2,11 @@ package com.inputoverlay.ui
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Color
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
-import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -64,7 +62,7 @@ class OverlayViewHolder(
             onCloseRequested()
         }
 
-        // Populate character buttons
+        // Populate character buttons with QWERTYUIOP shortcuts
         containerSymbols.removeAllViews()
         val inflater = LayoutInflater.from(context)
         val showShortcuts = prefs.isKeyboardShortcutsEnabled
@@ -81,9 +79,9 @@ class OverlayViewHolder(
                 onCharacterSelected(char)
             }
 
-            if (showShortcuts && index < 9) {
+            if (showShortcuts && index < ROW_SHORTCUTS.size) {
                 tvShortcut.visibility = View.VISIBLE
-                tvShortcut.text = (index + 1).toString()
+                tvShortcut.text = ROW_SHORTCUTS[index]
             } else {
                 tvShortcut.visibility = View.GONE
             }
@@ -91,7 +89,7 @@ class OverlayViewHolder(
             containerSymbols.addView(itemView)
         }
 
-        // Hardware keyboard listener
+        // Hardware keyboard listener when overlay has window focus
         rootView.isFocusable = true
         rootView.isFocusableInTouchMode = true
         rootView.setOnKeyListener { _, keyCode, event ->
@@ -105,16 +103,32 @@ class OverlayViewHolder(
                         onShiftToggled(!isUppercase)
                         return@setOnKeyListener true
                     }
-                    in KeyEvent.KEYCODE_1..KeyEvent.KEYCODE_9 -> {
-                        val selectedIndex = keyCode - KeyEvent.KEYCODE_1
-                        if (selectedIndex < characters.size) {
-                            onCharacterSelected(characters[selectedIndex])
+                    else -> {
+                        val rowIdx = getKeyboardRowIndex(keyCode)
+                        if (rowIdx != -1 && rowIdx < characters.size) {
+                            onCharacterSelected(characters[rowIdx])
                             return@setOnKeyListener true
                         }
                     }
                 }
             }
             false
+        }
+    }
+
+    private fun getKeyboardRowIndex(keyCode: Int): Int {
+        return when (keyCode) {
+            KeyEvent.KEYCODE_Q -> 0
+            KeyEvent.KEYCODE_W -> 1
+            KeyEvent.KEYCODE_E -> 2
+            KeyEvent.KEYCODE_R -> 3
+            KeyEvent.KEYCODE_T -> 4
+            KeyEvent.KEYCODE_Y -> 5
+            KeyEvent.KEYCODE_U -> 6
+            KeyEvent.KEYCODE_I -> 7
+            KeyEvent.KEYCODE_O -> 8
+            KeyEvent.KEYCODE_P -> 9
+            else -> -1
         }
     }
 
@@ -137,10 +151,18 @@ class OverlayViewHolder(
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
+                    val displayMetrics = context.resources.displayMetrics
+                    val screenWidth = displayMetrics.widthPixels
+                    val screenHeight = displayMetrics.heightPixels
+
                     val deltaX = (event.rawX - initialTouchX).toInt()
                     val deltaY = (event.rawY - initialTouchY).toInt()
-                    layoutParams.x = initialX + deltaX
-                    layoutParams.y = initialY + deltaY
+
+                    val maxX = (screenWidth - rootView.width).coerceAtLeast(0)
+                    val maxY = (screenHeight - rootView.height).coerceAtLeast(0)
+
+                    layoutParams.x = (initialX + deltaX).coerceIn(0, maxX)
+                    layoutParams.y = (initialY + deltaY).coerceIn(30, maxY)
                     windowManager.updateViewLayout(rootView, layoutParams)
                     true
                 }
@@ -153,5 +175,9 @@ class OverlayViewHolder(
                 else -> false
             }
         }
+    }
+
+    companion object {
+        val ROW_SHORTCUTS = listOf("Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P")
     }
 }

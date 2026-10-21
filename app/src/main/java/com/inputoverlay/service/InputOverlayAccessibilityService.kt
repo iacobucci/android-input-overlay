@@ -7,10 +7,13 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
+import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 
 class InputOverlayAccessibilityService : AccessibilityService() {
+
+    private var lastFocusedNode: AccessibilityNodeInfo? = null
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -21,14 +24,23 @@ class InputOverlayAccessibilityService : AccessibilityService() {
                 AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or
                 AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED
         info.feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
-        info.flags = AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS or
-                AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
+        info.flags = info.flags or
+                AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS or
+                AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS or
+                AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS
         serviceInfo = info
-        Log.d(TAG, "InputOverlayAccessibilityService connected")
+        Log.d(TAG, "InputOverlayAccessibilityService connected with key event filtering enabled")
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        // No periodic processing needed; service is queried directly when injecting characters
+        if (event == null) return
+        if (event.eventType == AccessibilityEvent.TYPE_VIEW_FOCUSED ||
+            event.eventType == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED) {
+            val source = event.source
+            if (source != null && (source.isEditable || source.className?.contains("EditText", ignoreCase = true) == true)) {
+                lastFocusedNode = source
+            }
+        }
     }
 
     override fun onInterrupt() {
@@ -43,97 +55,173 @@ class InputOverlayAccessibilityService : AccessibilityService() {
         Log.d(TAG, "InputOverlayAccessibilityService destroyed")
     }
 
+    override fun onKeyEvent(event: KeyEvent): Boolean {
+        Log.d(TAG, "onKeyEvent: keyCode=${event.keyCode}, action=${event.action}, overlayVisible=${OverlayService.instance?.isOverlayVisible}")
+        val overlay = OverlayService.instance
+        if (overlay != null && overlay.isOverlayVisible) {
+            // Dismiss on ESCAPE key
+            if (event.keyCode == KeyEvent.KEYCODE_ESCAPE) {
+                if (event.action == KeyEvent.ACTION_DOWN) {
+                    Log.d(TAG, "Intercepted ESCAPE -> hiding overlay")
+                    overlay.hideOverlay()
+                }
+                return true
+            }
+
+            // Toggle Shift / Uppercase on hardware Shift key
+            if (event.keyCode == KeyEvent.KEYCODE_SHIFT_LEFT || event.keyCode == KeyEvent.KEYCODE_SHIFT_RIGHT) {
+                if (event.action == KeyEvent.ACTION_DOWN) {
+                    overlay.toggleShift()
+                }
+                return true
+            }
+
+            // Keyboard row: Q W E R T Y U I O P
+            val charIndex = getKeyboardRowIndex(event.keyCode)
+            if (charIndex != -1) {
+                if (event.action == KeyEvent.ACTION_DOWN) {
+                    overlay.selectCharacterByIndex(charIndex)
+                }
+                return true
+            }
+        }
+        return super.onKeyEvent(event)
+    }
+
+    private fun getKeyboardRowIndex(keyCode: Int): Int {
+        return when (keyCode) {
+            KeyEvent.KEYCODE_Q -> 0
+            KeyEvent.KEYCODE_W -> 1
+            KeyEvent.KEYCODE_E -> 2
+            KeyEvent.KEYCODE_R -> 3
+            KeyEvent.KEYCODE_T -> 4
+            KeyEvent.KEYCODE_Y -> 5
+            KeyEvent.KEYCODE_U -> 6
+            KeyEvent.KEYCODE_I -> 7
+            KeyEvent.KEYCODE_O -> 8
+            KeyEvent.KEYCODE_P -> 9
+            else -> -1
+        }
+    }
+
     /**
      * Injects the provided text directly into the currently active/focused editable field.
-     * Returns true if injection succeeded, false otherwise.
+     * Uses direct text splicing (ACTION_SET_TEXT) without touching the clipboard.
+     * Falls back to ACTION_PASTE with automatic clipboard restoration if necessary.
      */
     fun injectText(text: String): Boolean {
-        val root = rootInActiveWindow
-        val targetNode = findFocusedEditableNode(root)
+        var targetNode: AccessibilityNodeInfo? = null
+
+        if (lastFocusedNode != null && (lastFocusedNode?.isEditable == true || lastFocusedNode?.className?.contains("EditText", ignoreCase = true) == true)) {
+            targetNode = lastFocusedNode
+        }
 
         if (targetNode == null) {
-            Log.w(TAG, "No focused editable node found in active window")
+            targetNode = findFocusedEditableNode(rootInActiveWindow)
+        }
+
+        // If active window didn't have the focused node, search across all open windows
+        if (targetNode == null) {
+            try {
+                for (window in windows) {
+                    val root = window.root ?: continue
+                    targetNode = findFocusedEditableNode(root)
+                    if (targetNode != null) break
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Error searching windows for focus", e)
+            }
+        }
+
+        if (targetNode == null) {
+            Log.w(TAG, "No focused editable node found in any interactive window")
             return false
         }
 
         try {
-            // First attempt: simulate PASTE action using ClipboardManager
-            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            val clip = ClipData.newPlainText("OverlayInput", text)
-            clipboard.setPrimaryClip(clip)
+            targetNode.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
 
-            val actions = targetNode.actionList.map { it.id }
-            if (actions.contains(AccessibilityNodeInfo.ACTION_PASTE)) {
-                val pasteSuccess = targetNode.performAction(AccessibilityNodeInfo.ACTION_PASTE)
-                if (pasteSuccess) {
-                    Log.d(TAG, "Successfully injected '$text' via ACTION_PASTE")
-                    return true
-                }
-            }
+            // Method 1: Direct text splicing via ACTION_SET_TEXT (clipboard untouched)
+            val currentText = targetNode.text?.toString() ?: ""
+            val selStart = targetNode.textSelectionStart
+            val selEnd = targetNode.textSelectionEnd
 
-            // Fallback attempt: Manual text splicing via ACTION_SET_TEXT
-            if (actions.contains(AccessibilityNodeInfo.ACTION_SET_TEXT)) {
-                val currentText = targetNode.text?.toString() ?: ""
-                val selStart = targetNode.textSelectionStart.coerceAtLeast(0)
-                val selEnd = targetNode.textSelectionEnd.coerceAtLeast(selStart)
-
+            if (selStart >= 0 && selEnd >= selStart) {
                 val safeStart = selStart.coerceAtMost(currentText.length)
                 val safeEnd = selEnd.coerceAtMost(currentText.length)
-
                 val newText = currentText.substring(0, safeStart) + text + currentText.substring(safeEnd)
+
                 val args = Bundle().apply {
                     putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, newText)
                 }
                 val setSuccess = targetNode.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
                 if (setSuccess) {
-                    // Try to move cursor immediately after inserted text
                     val newCursorPos = safeStart + text.length
                     val cursorArgs = Bundle().apply {
                         putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_START_INT, newCursorPos)
                         putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT, newCursorPos)
                     }
                     targetNode.performAction(AccessibilityNodeInfo.ACTION_SET_SELECTION, cursorArgs)
-                    Log.d(TAG, "Successfully injected '$text' via ACTION_SET_TEXT")
+                    Log.d(TAG, "Successfully injected '$text' directly via ACTION_SET_TEXT")
                     return true
                 }
             }
 
-            Log.w(TAG, "Could not inject text: neither paste nor set_text succeeded")
+            // Method 2: Simulate ACTION_PASTE while preserving the user's existing clipboard
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val previousClip = clipboard.primaryClip
+            val tempClip = ClipData.newPlainText("OverlayInput", text)
+            clipboard.setPrimaryClip(tempClip)
+
+            val actions = targetNode.actionList.map { it.id }
+            if (actions.contains(AccessibilityNodeInfo.ACTION_PASTE)) {
+                val pasteSuccess = targetNode.performAction(AccessibilityNodeInfo.ACTION_PASTE)
+
+                // Restore previous clipboard so user clipboard is preserved
+                if (previousClip != null) {
+                    try {
+                        clipboard.setPrimaryClip(previousClip)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Could not restore previous clipboard", e)
+                    }
+                }
+
+                if (pasteSuccess) {
+                    Log.d(TAG, "Successfully injected '$text' via ACTION_PASTE (clipboard preserved)")
+                    return true
+                }
+            }
+
+            Log.w(TAG, "Could not inject text: neither set_text nor paste succeeded")
             return false
         } catch (e: Exception) {
             Log.e(TAG, "Error injecting text into node", e)
             return false
-        } finally {
-            targetNode.recycle()
-            root?.recycle()
         }
     }
 
     private fun findFocusedEditableNode(root: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
         if (root == null) return null
 
-        // Direct input focus check
         root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)?.let { focused ->
             if (focused.isEditable || focused.isFocusable) {
                 return focused
             }
         }
 
-        // Accessibility focus check
         root.findFocus(AccessibilityNodeInfo.FOCUS_ACCESSIBILITY)?.let { focused ->
             if (focused.isEditable) {
                 return focused
             }
         }
 
-        // Tree traversal fallback for custom views / webviews
         return findFirstEditableInHierarchy(root)
     }
 
     private fun findFirstEditableInHierarchy(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
         if (node == null) return null
         if (node.isFocused && (node.isEditable || node.className?.contains("EditText", ignoreCase = true) == true)) {
-            return AccessibilityNodeInfo.obtain(node)
+            return node
         }
         for (i in 0 until node.childCount) {
             val child = node.getChild(i) ?: continue
@@ -141,13 +229,13 @@ class InputOverlayAccessibilityService : AccessibilityService() {
             if (found != null) {
                 return found
             }
-            child.recycle()
         }
         return null
     }
 
     companion object {
         private const val TAG = "OverlayAccessibility"
+
         @Volatile
         var instance: InputOverlayAccessibilityService? = null
             private set

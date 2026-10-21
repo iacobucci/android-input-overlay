@@ -20,7 +20,6 @@ import androidx.core.app.NotificationCompat
 import com.inputoverlay.R
 import com.inputoverlay.model.PresetData
 import com.inputoverlay.model.SymbolCategory
-import com.inputoverlay.model.SymbolItem
 import com.inputoverlay.ui.MainActivity
 import com.inputoverlay.ui.OverlayViewHolder
 import com.inputoverlay.utils.OverlayPreferences
@@ -38,8 +37,12 @@ class OverlayService : Service() {
     private var isUppercase: Boolean = false
     private var isVisible: Boolean = false
 
+    val isOverlayVisible: Boolean
+        get() = isVisible
+
     override fun onCreate() {
         super.onCreate()
+        instance = this
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         prefs = OverlayPreferences(this)
         isUppercase = prefs.isDefaultUppercase
@@ -103,14 +106,13 @@ class OverlayService : Service() {
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    private fun showOverlay() {
+    fun showOverlay() {
         if (!Settings.canDrawOverlays(this)) {
             Log.e(TAG, "Cannot draw overlay: SYSTEM_ALERT_WINDOW permission not granted")
             return
         }
 
         if (isVisible && overlayViewHolder != null) {
-            // Update existing view
             bindOverlayView()
             return
         }
@@ -118,8 +120,28 @@ class OverlayService : Service() {
         startForeground(NOTIFICATION_ID, buildNotification())
 
         val type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-        val windowFlags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
+
+        // FLAG_NOT_FOCUSABLE keeps focus on the underlying app's active text field
+        // while InputOverlayAccessibilityService handles physical keyboard shortcuts (Esc, Q..P)
+        val windowFlags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+
+        val displayMetrics = resources.displayMetrics
+        val screenWidth = displayMetrics.widthPixels
+        val screenHeight = displayMetrics.heightPixels
+
+        val clampedX = if (prefs.overlayPosX in 0..(screenWidth - 100)) {
+            prefs.overlayPosX
+        } else {
+            ((screenWidth - 600) / 2).coerceAtLeast(20)
+        }
+
+        val clampedY = if (prefs.overlayPosY in 50..(screenHeight - 100)) {
+            prefs.overlayPosY
+        } else {
+            (screenHeight - 280).coerceAtLeast(100)
+        }
 
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -128,9 +150,9 @@ class OverlayService : Service() {
             windowFlags,
             PixelFormat.TRANSLUCENT
         ).apply {
-            gravity = Gravity.CENTER_HORIZONTAL or Gravity.BOTTOM
-            x = if (prefs.overlayPosX != -1) prefs.overlayPosX else 0
-            y = if (prefs.overlayPosY != -1) prefs.overlayPosY else 180
+            gravity = Gravity.TOP or Gravity.START
+            x = clampedX
+            y = clampedY
         }
         layoutParams = params
 
@@ -150,7 +172,8 @@ class OverlayService : Service() {
         try {
             windowManager.addView(overlayViewHolder?.rootView, params)
             isVisible = true
-            Log.d(TAG, "Overlay added to window manager")
+            overlayViewHolder?.rootView?.requestFocus()
+            Log.d(TAG, "Overlay added to window manager at (${params.x}, ${params.y})")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to add overlay view", e)
         }
@@ -180,6 +203,21 @@ class OverlayService : Service() {
         )
     }
 
+    fun selectCharacterByIndex(index: Int) {
+        if (index in currentCategory.items.indices) {
+            val char = currentCategory.items[index].getDisplay(isUppercase)
+            TextInjector.injectOrCopy(this, char, currentCategory.id, prefs)
+            if (prefs.isAutoDismissEnabled) {
+                hideOverlay()
+            }
+        }
+    }
+
+    fun toggleShift() {
+        isUppercase = !isUppercase
+        bindOverlayView()
+    }
+
     private fun cycleNextPreset() {
         val presets = PresetData.ALL_PRESETS
         val currentIndex = presets.indexOfFirst { it.id == currentCategory.id }
@@ -187,7 +225,7 @@ class OverlayService : Service() {
         currentCategory = presets[nextIndex]
     }
 
-    private fun hideOverlay() {
+    fun hideOverlay() {
         if (isVisible && overlayViewHolder != null) {
             try {
                 windowManager.removeView(overlayViewHolder?.rootView)
@@ -246,6 +284,9 @@ class OverlayService : Service() {
 
     override fun onDestroy() {
         hideOverlay()
+        if (instance == this) {
+            instance = null
+        }
         super.onDestroy()
     }
 
@@ -255,6 +296,10 @@ class OverlayService : Service() {
         private const val TAG = "OverlayService"
         private const val CHANNEL_ID = "overlay_service_channel"
         private const val NOTIFICATION_ID = 1001
+
+        @Volatile
+        var instance: OverlayService? = null
+            private set
 
         const val ACTION_SHOW = "com.inputoverlay.action.SHOW_OVERLAY"
         const val ACTION_SHOW_SHORT = "com.inputoverlay.SHOW"
