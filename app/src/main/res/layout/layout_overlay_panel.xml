@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/overlay_root"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="@drawable/bg_overlay_panel"
+    android:gravity="center_vertical"
+    android:elevation="12dp">
+
+    <!-- Drag Handle -->
+    <ImageView
+        android:id="@+id/btn_drag"
+        android:layout_width="32dp"
+        android:layout_height="48dp"
+        android:padding="6dp"
+        android:src="@drawable/ic_drag_handle"
+        android:background="@drawable/bg_action_button"
+        android:contentDescription="Drag overlay"
+        android:clickable="true"
+        android:focusable="false" />
+
+    <!-- Shift / Uppercase Toggle -->
+    <ImageButton
+        android:id="@+id/btn_shift"
+        android:layout_width="38dp"
+        android:layout_height="48dp"
+        android:padding="8dp"
+        android:src="@drawable/ic_shift"
+        android:background="@drawable/bg_action_button"
+        android:contentDescription="Toggle uppercase"
+        android:tint="@color/overlay_text_secondary"
+        android:layout_marginStart="2dp" />
+
+    <!-- Divider -->
+    <View
+        android:layout_width="1dp"
+        android:layout_height="28dp"
+        android:background="#33FFFFFF"
+        android:layout_marginHorizontal="4dp" />
+
+    <!-- Character buttons scrollable container -->
+    <HorizontalScrollView
+        android:id="@+id/scroll_symbols"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:scrollbars="none"
+        android:overScrollMode="never">
+
+        <LinearLayout
+            android:id="@+id/container_symbols"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="2dp" />
+    </HorizontalScrollView>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="1dp"
+        android:layout_height="28dp"
+        android:background="#33FFFFFF"
+        android:layout_marginHorizontal="4dp" />
+
+    <!-- Category selector button (cycles through presets: Italian -> Spanish -> French -> Math) -->
+    <TextView
+        android:id="@+id/btn_category_chip"
+        android:layout_width="wrap_content"
+        android:layout_height="32dp"
+        android:gravity="center"
+        android:paddingHorizontal="8dp"
+        android:text="IT"
+        android:textStyle="bold"
+        android:textColor="@color/overlay_accent"
+        android:textSize="12sp"
+        android:background="@drawable/bg_action_button"
+        android:contentDescription="Switch symbol set"
+        android:layout_marginEnd="2dp" />
+
+    <!-- Close Button -->
+    <ImageButton
+        android:id="@+id/btn_close"
+        android:layout_width="36dp"
+        android:layout_height="48dp"
+        android:padding="8dp"
+        android:src="@drawable/ic_close"
+        android:background="@drawable/bg_action_button"
+        android:contentDescription="Close overlay"
+        android:tint="@color/overlay_text_secondary" />
+
+</LinearLayout>

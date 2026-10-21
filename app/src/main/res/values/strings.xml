@@ -1,0 +1,40 @@
+<resources>
+    <string name="app_name">Input Overlay</string>
+    <string name="accessibility_service_label">Input Overlay Text Insertion</string>
+    <string name="accessibility_service_description">Allows Input Overlay to insert accented characters directly at your cursor position in any app without taking away focus.</string>
+    
+    <!-- Intent actions and descriptions -->
+    <string name="action_show">com.inputoverlay.action.SHOW_OVERLAY</string>
+    <string name="action_hide">com.inputoverlay.action.HIDE_OVERLAY</string>
+    <string name="action_toggle">com.inputoverlay.action.TOGGLE_OVERLAY</string>
+    
+    <!-- UI Labels -->
+    <string name="status_title">Service &amp; Permission Status</string>
+    <string name="overlay_permission_title">Display Over Other Apps</string>
+    <string name="overlay_permission_desc">Required to display the floating accent bar on top of your screen.</string>
+    <string name="accessibility_permission_title">Direct Text Injection</string>
+    <string name="accessibility_permission_desc">Injects selected characters directly at your cursor. If disabled, fallback is clipboard copy.</string>
+    <string name="battery_opt_title">Unrestricted Battery</string>
+    <string name="battery_opt_desc">Ensures the overlay appears instantly when invoked from KeyMapper without background delays.</string>
+
+    <string name="btn_grant">Grant</string>
+    <string name="btn_granted">Granted</string>
+    <string name="btn_test_overlay">Test Overlay Now</string>
+    <string name="btn_hide_overlay">Hide Overlay</string>
+    
+    <string name="keymapper_guide_title">KeyMapper Setup Guide</string>
+    <string name="keymapper_guide_summary">How to map a hardware key or gesture in KeyMapper to trigger this accent overlay.</string>
+    <string name="copy_action">Copy Action</string>
+    <string name="copied_to_clipboard">Copied to clipboard: %s</string>
+    
+    <string name="settings_title">Overlay Preferences</string>
+    <string name="pref_auto_dismiss">Auto-dismiss on selection</string>
+    <string name="pref_auto_dismiss_summary">Automatically hide the overlay once a character is selected.</string>
+    <string name="pref_haptic_feedback">Haptic feedback</string>
+    <string name="pref_haptic_feedback_summary">Vibrate briefly when tapping a character.</string>
+    <string name="pref_keyboard_shortcuts">Physical keyboard shortcuts (1-9)</string>
+    <string name="pref_keyboard_shortcuts_summary">Press 1-9 on hardware keyboard to instantly pick that accent.</string>
+    <string name="pref_default_case_upper">Start in UPPERCASE</string>
+    <string name="pref_default_case_upper_summary">Show À È É Ì Ò Ù first instead of lowercase.</string>
+    <string name="pref_position">Overlay Position</string>
+</resources>

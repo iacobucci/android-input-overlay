@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#0B57D0</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="primary_container">#D3E3FD</color>
+    <color name="on_primary_container">#041E49</color>
+    
+    <color name="surface">#F8F9FA</color>
+    <color name="on_surface">#1F1F1F</color>
+    <color name="surface_variant">#E1E3E1</color>
+    <color name="on_surface_variant">#444746</color>
+    
+    <color name="outline">#747775</color>
+    <color name="outline_variant">#C4C7C5</color>
+    
+    <color name="status_green">#146C2E</color>
+    <color name="status_green_bg">#C4EED0</color>
+    <color name="status_amber">#A85000</color>
+    <color name="status_amber_bg">#FFE0B2</color>
+    
+    <!-- Overlay Specific Colors (supports floating over light or dark background cleanly) -->
+    <color name="overlay_background">#E61E1E24</color>
+    <color name="overlay_card">#F22B2D30</color>
+    <color name="overlay_button_bg">#3D424A</color>
+    <color name="overlay_button_pressed">#535A65</color>
+    <color name="overlay_text_primary">#F8F9FA</color>
+    <color name="overlay_text_secondary">#9DA3A8</color>
+    <color name="overlay_accent">#7Cacf8</color>
+</resources>

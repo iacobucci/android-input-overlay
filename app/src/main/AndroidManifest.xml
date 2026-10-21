@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Permissions -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/ic_launcher_foreground"
+        android:label="@string/app_name"
+        android:roundIcon="@drawable/ic_launcher_foreground"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.InputOverlay">
+
+        <!-- Main Dashboard & Settings Activity -->
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Translucent Overlay Activity (Can be triggered via KeyMapper "Start Activity") -->
+        <activity
+            android:name=".ui.OverlayActivity"
+            android:exported="true"
+            android:theme="@style/Theme.InputOverlay.Translucent"
+            android:launchMode="singleInstance"
+            android:excludeFromRecents="true">
+            <intent-filter>
+                <action android:name="com.inputoverlay.action.SHOW_OVERLAY" />
+                <action android:name="com.inputoverlay.action.TOGGLE_OVERLAY" />
+                <action android:name="com.inputoverlay.SHOW" />
+                <action android:name="com.inputoverlay.TOGGLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!-- System WindowManager Overlay Service -->
+        <service
+            android:name=".service.OverlayService"
+            android:exported="true"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Floating overlay for keyboard accented character input" />
+            <intent-filter>
+                <action android:name="com.inputoverlay.action.SHOW_OVERLAY" />
+                <action android:name="com.inputoverlay.action.HIDE_OVERLAY" />
+                <action android:name="com.inputoverlay.action.TOGGLE_OVERLAY" />
+                <action android:name="com.inputoverlay.SHOW" />
+                <action android:name="com.inputoverlay.HIDE" />
+                <action android:name="com.inputoverlay.TOGGLE" />
+            </intent-filter>
+        </service>
+
+        <!-- Broadcast Receiver for KeyMapper triggers -->
+        <receiver
+            android:name=".receiver.OverlayReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.inputoverlay.action.SHOW_OVERLAY" />
+                <action android:name="com.inputoverlay.action.HIDE_OVERLAY" />
+                <action android:name="com.inputoverlay.action.TOGGLE_OVERLAY" />
+                <action android:name="com.inputoverlay.SHOW" />
+                <action android:name="com.inputoverlay.HIDE" />
+                <action android:name="com.inputoverlay.TOGGLE" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Accessibility Service for direct text injection at cursor position -->
+        <service
+            android:name=".service.InputOverlayAccessibilityService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:label="@string/accessibility_service_label"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
+    </application>
+
+</manifest>
