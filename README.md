@@ -1,5 +1,7 @@
 # Input Overlay for Android
 
+![](./res/image.webp)
+
 A fast, lightweight, and configurable Android overlay app designed to display accented characters (such as Italian vowels `à`, `è`, `é`, `ì`, `ò`, `ù`) and customizable symbols directly over your screen on demand. 
 
 Optimized specifically for devices with physical keyboards (such as the **BlackBerry KEY2**, **Unihertz Titan**, and external Bluetooth/USB keyboards), it integrates seamlessly with **[KeyMapper](https://github.com/keymapperorg/KeyMapper)** to pop up instantly and inject characters directly into your active cursor—including within **Termux** and terminal emulators—without ever overwriting your clipboard.
