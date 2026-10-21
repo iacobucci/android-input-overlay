@@ -105,8 +105,11 @@ class OverlayViewHolder(
                     }
                     else -> {
                         val rowIdx = getKeyboardRowIndex(keyCode)
-                        if (rowIdx != -1 && rowIdx < characters.size) {
-                            onCharacterSelected(characters[rowIdx])
+                        if (rowIdx != -1 && rowIdx < category.items.size) {
+                            val isShift = event.isShiftPressed || (event.metaState and KeyEvent.META_CAPS_LOCK_ON) != 0
+                            val uppercase = if (isShift) true else isUppercase
+                            val char = category.items[rowIdx].getDisplay(uppercase)
+                            onCharacterSelected(char)
                             return@setOnKeyListener true
                         }
                     }

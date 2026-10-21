@@ -203,9 +203,10 @@ class OverlayService : Service() {
         )
     }
 
-    fun selectCharacterByIndex(index: Int) {
+    fun selectCharacterByIndex(index: Int, forceUppercase: Boolean? = null) {
         if (index in currentCategory.items.indices) {
-            val char = currentCategory.items[index].getDisplay(isUppercase)
+            val uppercase = forceUppercase ?: isUppercase
+            val char = currentCategory.items[index].getDisplay(uppercase)
             TextInjector.injectDirectly(this, char, currentCategory.id, prefs)
             if (prefs.isAutoDismissEnabled) {
                 hideOverlay()

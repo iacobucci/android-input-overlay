@@ -76,11 +76,12 @@ class InputOverlayAccessibilityService : AccessibilityService() {
                 return true
             }
 
-            // Keyboard row: Q W E R T Y U I O P
+            // Keyboard row: Q W E R T Y U I O P (supports SHIFT + Q/W/E/R/T/Y for uppercase accents)
             val charIndex = getKeyboardRowIndex(event.keyCode)
             if (charIndex != -1) {
                 if (event.action == KeyEvent.ACTION_DOWN) {
-                    overlay.selectCharacterByIndex(charIndex)
+                    val isShift = event.isShiftPressed || (event.metaState and KeyEvent.META_CAPS_LOCK_ON) != 0
+                    overlay.selectCharacterByIndex(charIndex, forceUppercase = if (isShift) true else null)
                 }
                 return true
             }
