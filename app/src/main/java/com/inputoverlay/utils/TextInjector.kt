@@ -1,7 +1,5 @@
 package com.inputoverlay.utils
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -9,8 +7,8 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.util.Log
-import android.widget.Toast
 import com.inputoverlay.service.InputOverlayAccessibilityService
+import com.inputoverlay.service.InputOverlayImeService
 
 object TextInjector {
 
@@ -19,7 +17,12 @@ object TextInjector {
     const val EXTRA_CHARACTER = "character"
     const val EXTRA_CATEGORY = "category"
 
-    fun injectOrCopy(context: Context, character: String, categoryId: String? = null, prefs: OverlayPreferences) {
+    /**
+     * Injects the character directly without ever touching or modifying the system clipboard.
+     * 1. Priority 1: InputConnection via InputOverlayImeService (works in Termux, TerminalView, webviews, and all apps)
+     * 2. Priority 2: Direct text splicing via AccessibilityNodeInfo (ACTION_SET_TEXT) on focused EditTexts
+     */
+    fun injectDirectly(context: Context, character: String, categoryId: String? = null, prefs: OverlayPreferences) {
         if (prefs.isHapticEnabled) {
             triggerHaptic(context)
         }
@@ -27,25 +30,21 @@ object TextInjector {
         // Broadcast character selection for KeyMapper / automation listeners
         broadcastCharacterSelected(context, character, categoryId)
 
-        // Attempt direct injection via AccessibilityService
-        val injected = InputOverlayAccessibilityService.instance?.injectText(character) ?: false
-        if (!injected) {
-            // Direct injection not possible; copy to clipboard and alert user
-            copyToClipboard(context, character)
-            val msg = if (InputOverlayAccessibilityService.isRunning) {
-                "Copied '$character' to clipboard"
-            } else {
-                "Copied '$character' (Enable Accessibility in settings for auto-typing)"
-            }
-            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+        // Priority 1: Native InputMethod InputConnection (ideal for Termux & any terminal or custom view)
+        val imeService = InputOverlayImeService.instance
+        if (imeService != null && imeService.commitChar(character)) {
+            Log.d(TAG, "Successfully injected '$character' directly via InputConnection")
+            return
         }
-    }
 
-    private fun copyToClipboard(context: Context, text: String) {
-        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val clip = ClipData.newPlainText("OverlayInput", text)
-        clipboard.setPrimaryClip(clip)
-        Log.d(TAG, "Copied '$text' to system clipboard")
+        // Priority 2: Direct Accessibility text insertion (for standard native input fields)
+        val a11yService = InputOverlayAccessibilityService.instance
+        if (a11yService != null && a11yService.injectText(character)) {
+            Log.d(TAG, "Successfully injected '$character' directly via AccessibilityService ACTION_SET_TEXT")
+            return
+        }
+
+        Log.w(TAG, "Could not inject '$character': InputOverlay Keyboard or Accessibility service not active on focused field")
     }
 
     private fun broadcastCharacterSelected(context: Context, character: String, categoryId: String?) {
@@ -54,7 +53,6 @@ object TextInjector {
             if (categoryId != null) {
                 putExtra(EXTRA_CATEGORY, categoryId)
             }
-            // Send broadcast to this package or explicitly for KeyMapper
             setPackage(context.packageName)
         }
         context.sendBroadcast(intent)

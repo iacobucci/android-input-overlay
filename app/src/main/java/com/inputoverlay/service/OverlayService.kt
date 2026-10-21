@@ -184,7 +184,7 @@ class OverlayService : Service() {
             category = currentCategory,
             isUppercase = isUppercase,
             onCharacterSelected = { char ->
-                TextInjector.injectOrCopy(this, char, currentCategory.id, prefs)
+                TextInjector.injectDirectly(this, char, currentCategory.id, prefs)
                 if (prefs.isAutoDismissEnabled) {
                     hideOverlay()
                 }
@@ -206,7 +206,7 @@ class OverlayService : Service() {
     fun selectCharacterByIndex(index: Int) {
         if (index in currentCategory.items.indices) {
             val char = currentCategory.items[index].getDisplay(isUppercase)
-            TextInjector.injectOrCopy(this, char, currentCategory.id, prefs)
+            TextInjector.injectDirectly(this, char, currentCategory.id, prefs)
             if (prefs.isAutoDismissEnabled) {
                 hideOverlay()
             }

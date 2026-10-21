@@ -54,7 +54,7 @@ class OverlayActivity : AppCompatActivity() {
                 category = category,
                 isUppercase = isUppercase,
                 onCharacterSelected = { char ->
-                    TextInjector.injectOrCopy(this, char, category.id, prefs)
+                    TextInjector.injectDirectly(this, char, category.id, prefs)
                     if (prefs.isAutoDismissEnabled) {
                         finish()
                     }

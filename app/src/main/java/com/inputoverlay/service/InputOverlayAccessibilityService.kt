@@ -141,7 +141,7 @@ class InputOverlayAccessibilityService : AccessibilityService() {
         try {
             targetNode.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
 
-            // Method 1: Direct text splicing via ACTION_SET_TEXT (clipboard untouched)
+            // Direct text splicing via ACTION_SET_TEXT without touching clipboard
             val currentText = targetNode.text?.toString() ?: ""
             val selStart = targetNode.textSelectionStart
             val selEnd = targetNode.textSelectionEnd
@@ -167,32 +167,7 @@ class InputOverlayAccessibilityService : AccessibilityService() {
                 }
             }
 
-            // Method 2: Simulate ACTION_PASTE while preserving the user's existing clipboard
-            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            val previousClip = clipboard.primaryClip
-            val tempClip = ClipData.newPlainText("OverlayInput", text)
-            clipboard.setPrimaryClip(tempClip)
-
-            val actions = targetNode.actionList.map { it.id }
-            if (actions.contains(AccessibilityNodeInfo.ACTION_PASTE)) {
-                val pasteSuccess = targetNode.performAction(AccessibilityNodeInfo.ACTION_PASTE)
-
-                // Restore previous clipboard so user clipboard is preserved
-                if (previousClip != null) {
-                    try {
-                        clipboard.setPrimaryClip(previousClip)
-                    } catch (e: Exception) {
-                        Log.w(TAG, "Could not restore previous clipboard", e)
-                    }
-                }
-
-                if (pasteSuccess) {
-                    Log.d(TAG, "Successfully injected '$text' via ACTION_PASTE (clipboard preserved)")
-                    return true
-                }
-            }
-
-            Log.w(TAG, "Could not inject text: neither set_text nor paste succeeded")
+            Log.w(TAG, "Could not inject text via ACTION_SET_TEXT on target node")
             return false
         } catch (e: Exception) {
             Log.e(TAG, "Error injecting text into node", e)

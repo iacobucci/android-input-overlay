@@ -89,6 +89,20 @@
                 android:resource="@xml/accessibility_service_config" />
         </service>
 
+        <!-- Input Method Service for native text and key combination input (Termux, terminals, all apps) -->
+        <service
+            android:name=".service.InputOverlayImeService"
+            android:label="Input Overlay Keyboard"
+            android:permission="android.permission.BIND_INPUT_METHOD"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.view.InputMethod" />
+            </intent-filter>
+            <meta-data
+                android:name="android.view.im"
+                android:resource="@xml/method" />
+        </service>
+
     </application>
 
 </manifest>

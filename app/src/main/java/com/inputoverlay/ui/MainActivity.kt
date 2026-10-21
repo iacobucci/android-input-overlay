@@ -73,6 +73,13 @@ class MainActivity : AppCompatActivity() {
             ).show()
         }
 
+        // IME button
+        binding.btnGrantIme.setOnClickListener {
+            val intent = Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)
+            startActivity(intent)
+            Toast.makeText(this, "Enable 'Input Overlay Keyboard' in Virtual Keyboards", Toast.LENGTH_LONG).show()
+        }
+
         // Battery optimization button
         binding.btnGrantBattery.setOnClickListener {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -193,6 +200,19 @@ class MainActivity : AppCompatActivity() {
             binding.ivAccessibilityStatus.setColorFilter(getColor(R.color.status_amber))
             binding.btnGrantAccessibility.isEnabled = true
             binding.btnGrantAccessibility.text = getString(R.string.btn_grant)
+        }
+
+        // Input Method (IME) status for Termux
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        val isImeEnabled = imm.enabledInputMethodList.any { it.packageName == packageName }
+        if (isImeEnabled) {
+            binding.ivImeStatus.setColorFilter(getColor(R.color.status_green))
+            binding.btnGrantIme.isEnabled = false
+            binding.btnGrantIme.text = getString(R.string.btn_granted)
+        } else {
+            binding.ivImeStatus.setColorFilter(getColor(R.color.status_amber))
+            binding.btnGrantIme.isEnabled = true
+            binding.btnGrantIme.text = getString(R.string.btn_grant)
         }
 
         // Battery optimization
