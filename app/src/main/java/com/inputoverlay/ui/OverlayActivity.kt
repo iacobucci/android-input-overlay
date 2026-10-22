@@ -9,6 +9,7 @@ import com.inputoverlay.databinding.ActivityOverlayBinding
 import com.inputoverlay.model.PresetData
 import com.inputoverlay.model.SymbolCategory
 import com.inputoverlay.service.OverlayService
+import com.inputoverlay.utils.KeyboardShortcutHelper
 import com.inputoverlay.utils.OverlayPreferences
 import com.inputoverlay.utils.TextInjector
 
@@ -39,6 +40,14 @@ class OverlayActivity : AppCompatActivity() {
 
         val categoryId = intent.getStringExtra(OverlayService.EXTRA_CATEGORY)
         val customChars = intent.getStringExtra(OverlayService.EXTRA_CHARACTERS)
+        val shortcutsExtra = intent.getStringExtra(OverlayService.EXTRA_SHORTCUTS)
+        val layoutExtra = intent.getStringExtra(OverlayService.EXTRA_LAYOUT)
+
+        val shortcuts = when {
+            !shortcutsExtra.isNullOrBlank() -> KeyboardShortcutHelper.parseShortcutKeys(shortcutsExtra)
+            !layoutExtra.isNullOrBlank() -> KeyboardShortcutHelper.getPresetShortcuts(layoutExtra)
+            else -> prefs.getShortcutList()
+        }
 
         var category = if (!customChars.isNullOrBlank()) {
             SymbolCategory("custom", "Custom", "★", PresetData.parseCustomCharacters(customChars))
@@ -53,6 +62,7 @@ class OverlayActivity : AppCompatActivity() {
             viewHolder.bind(
                 category = category,
                 isUppercase = isUppercase,
+                shortcuts = shortcuts,
                 onCharacterSelected = { char ->
                     TextInjector.injectDirectly(this, char, category.id, prefs)
                     if (prefs.isAutoDismissEnabled) {

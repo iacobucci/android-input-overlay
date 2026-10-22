@@ -32,8 +32,13 @@
     <string name="pref_auto_dismiss_summary">Automatically hide the overlay once a character is selected.</string>
     <string name="pref_haptic_feedback">Haptic feedback</string>
     <string name="pref_haptic_feedback_summary">Vibrate briefly when tapping a character.</string>
-    <string name="pref_keyboard_shortcuts">Physical keyboard row shortcuts (Q-P)</string>
-    <string name="pref_keyboard_shortcuts_summary">Press Q, W, E, R, T, Y… on hardware keyboard to instantly pick that accent. Press Esc to dismiss.</string>
+    <string name="pref_keyboard_shortcuts">Physical keyboard shortcuts</string>
+    <string name="pref_keyboard_shortcuts_summary">Press configured hardware keys to pick accents. Press Esc to dismiss.</string>
+    <string name="pref_shortcut_layout_title">Physical Keyboard Layout &amp; Key Map</string>
+    <string name="pref_shortcut_layout_desc">Configure the ordered list of keys mapping to each accent character (f: key ➔ character).</string>
+    <string name="pref_shortcut_keys_hint">Shortcut Keys (in order)</string>
+    <string name="pref_shortcut_keys_helper">E.g. Q, W, E, R, T, Z or [\"q\",\"w\",\"e\",\"r\",\"t\",\"z\"]</string>
+    <string name="pref_shortcut_mapping_preview_title">Current Key ➔ Character Mapping (f):</string>
     <string name="pref_default_case_upper">Start in UPPERCASE</string>
     <string name="pref_default_case_upper_summary">Show À È É Ì Ò Ù first instead of lowercase.</string>
     <string name="pref_position">Overlay Position</string>

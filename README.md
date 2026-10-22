@@ -15,8 +15,9 @@ Optimized specifically for devices with physical keyboards (such as the **BlackB
   - **Termux & Terminal Support:** Uses an integrated lightweight `InputMethodService` (`InputOverlayImeService`) communicating through `InputConnection.commitText()`. Characters are sent directly into Termux, shell sessions, and web views.
   - **Native Text Fields:** Directly splices characters at the cursor via `ACTION_SET_TEXT`.
   - **No Clipboard Abuse:** The system clipboard is never touched, modified, or polluted.
-- **Physical Keyboard Row Shortcuts (`QWERTYUIOP`):**
-  - Select characters instantly using the top letter row on your physical keyboard:
+- **Physical Keyboard Layouts & Custom Key Maps (`QWERTY`, `QWERTZ`, `AZERTY`, Custom):**
+  - Select characters instantly using physical keyboard shortcuts. Supports **QWERTY**, **QWERTZ** (e.g. `Q, W, E, R, T, Z`), **AZERTY**, or any custom list of keys acting as a function $f: k \mapsto c$.
+  - In QWERTZ mode, `Z` is mapped to `ù` (`Shift + Z` for `Ù`):
     | Shortcut | Character (Default) | <kbd>Shift</kbd> + Shortcut | Uppercase Result |
     | :---: | :---: | :---: | :---: |
     | <kbd>Q</kbd> | `à` | <kbd>Shift</kbd> + <kbd>Q</kbd> | `À` |
@@ -24,7 +25,8 @@ Optimized specifically for devices with physical keyboards (such as the **BlackB
     | <kbd>E</kbd> | `é` | <kbd>Shift</kbd> + <kbd>E</kbd> | `É` |
     | <kbd>R</kbd> | `ì` | <kbd>Shift</kbd> + <kbd>R</kbd> | `Ì` |
     | <kbd>T</kbd> | `ò` | <kbd>Shift</kbd> + <kbd>T</kbd> | `Ò` |
-    | <kbd>Y</kbd> | `ù` | <kbd>Shift</kbd> + <kbd>Y</kbd> | `Ù` |
+    | <kbd>Y</kbd> *(or <kbd>Z</kbd> in QWERTZ)* | `ù` | <kbd>Shift</kbd> + Shortcut | `Ù` |
+  - Fully configurable in the app settings with a real-time mapping preview.
 - **Instant Dismissal with <kbd>Esc</kbd>:** Pressing <kbd>Esc</kbd> on a physical keyboard or tapping outside immediately hides the overlay.
 - **Natural 1:1 Drag & Positioning:** Reposition the floating bar anywhere on screen with natural tracking and boundary clamping (so the overlay never slips off-screen).
 - **Accents for Italian & Other Languages:**
@@ -65,6 +67,8 @@ You can pass custom Intent Extras to show specific characters or categories:
 | :--- | :--- | :--- | :--- |
 | `category` | String | `italian`, `e`, `a`, `spanish`, `french`, `german`, `math` | Loads preset palette (e.g. `e` shows `è, é, ê, ë`) |
 | `characters` | String | `à,è,é,ì,ò,ù` or `«»“”` | Loads arbitrary custom characters in the overlay |
+| `layout` | String | `qwertz`, `qwerty`, `azerty` | Sets keyboard layout preset for shortcuts |
+| `shortcuts` | String | `q,w,e,r,t,z` or `["q","w","e","r","t","z"]` | Sets custom shortcut keys mapping to overlay characters |
 | `case` | String | `upper`, `lower`, `toggle` | Forces uppercase or lowercase display |
 
 #### Alternative: Start Activity / Service
@@ -80,6 +84,12 @@ You can test the overlay directly from your terminal using ADB:
 ```bash
 # Show Italian accents
 adb shell am broadcast -a com.inputoverlay.action.SHOW_OVERLAY -p com.inputoverlay
+
+# Show with QWERTZ layout shortcuts
+adb shell am broadcast -a com.inputoverlay.action.SHOW_OVERLAY -p com.inputoverlay --es layout "qwertz"
+
+# Show with custom shortcut keys (e.g. mapping Q, W, E, R, T, Z)
+adb shell am broadcast -a com.inputoverlay.action.SHOW_OVERLAY -p com.inputoverlay --es shortcuts "q,w,e,r,t,z"
 
 # Toggle overlay
 adb shell am broadcast -a com.inputoverlay.action.TOGGLE_OVERLAY -p com.inputoverlay

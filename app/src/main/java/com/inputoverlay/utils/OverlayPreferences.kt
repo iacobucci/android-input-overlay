@@ -24,6 +24,18 @@ class OverlayPreferences(context: Context) {
         get() = prefs.getBoolean(KEY_DEFAULT_UPPERCASE, false)
         set(value) = prefs.edit().putBoolean(KEY_DEFAULT_UPPERCASE, value).apply()
 
+    var shortcutLayout: String
+        get() = prefs.getString(KEY_SHORTCUT_LAYOUT, KeyboardShortcutHelper.LAYOUT_QWERTY) ?: KeyboardShortcutHelper.LAYOUT_QWERTY
+        set(value) = prefs.edit().putString(KEY_SHORTCUT_LAYOUT, value).apply()
+
+    var shortcutKeys: String
+        get() = prefs.getString(KEY_SHORTCUT_KEYS, KeyboardShortcutHelper.DEFAULT_SHORTCUTS_STRING) ?: KeyboardShortcutHelper.DEFAULT_SHORTCUTS_STRING
+        set(value) = prefs.edit().putString(KEY_SHORTCUT_KEYS, value).apply()
+
+    fun getShortcutList(): List<String> {
+        return KeyboardShortcutHelper.parseShortcutKeys(shortcutKeys)
+    }
+
     var defaultPresetId: String
         get() = prefs.getString(KEY_DEFAULT_PRESET, "italian") ?: "italian"
         set(value) = prefs.edit().putString(KEY_DEFAULT_PRESET, value).apply()
@@ -46,6 +58,8 @@ class OverlayPreferences(context: Context) {
         private const val KEY_HAPTIC = "key_haptic"
         private const val KEY_SHORTCUTS = "key_shortcuts"
         private const val KEY_DEFAULT_UPPERCASE = "key_default_uppercase"
+        private const val KEY_SHORTCUT_LAYOUT = "key_shortcut_layout"
+        private const val KEY_SHORTCUT_KEYS = "key_shortcut_keys"
         private const val KEY_DEFAULT_PRESET = "key_default_preset"
         private const val KEY_CUSTOM_SYMBOLS = "key_custom_symbols"
         private const val KEY_POS_X = "key_pos_x"

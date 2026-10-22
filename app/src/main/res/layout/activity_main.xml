@@ -460,7 +460,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="• Extra Key: category | Value: italian (or: e, a, i, o, u, spanish, french, german, math)\n• Extra Key: characters | Value: custom string (e.g. è,é,ê,ë)\n• Extra Key: case | Value: lower or upper"
+                        android:text="• Extra Key: category | Value: italian (or: e, a, i, o, u, spanish, french, german, math)\n• Extra Key: characters | Value: custom string (e.g. è,é,ê,ë)\n• Extra Key: layout | Value: qwertz, qwerty, or azerty\n• Extra Key: shortcuts | Value: q,w,e,r,t,z\n• Extra Key: case | Value: lower or upper"
                         android:textSize="12sp"
                         android:fontFamily="monospace"
                         android:textColor="@color/on_surface_variant"
@@ -526,6 +526,112 @@
                         android:layout_marginTop="8dp"
                         android:text="@string/pref_keyboard_shortcuts"
                         android:checked="true" />
+
+                    <!-- Keyboard Layout / Shortcuts Configuration -->
+                    <LinearLayout
+                        android:id="@+id/layout_shortcut_config"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginTop="8dp"
+                        android:background="#08000000"
+                        android:padding="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/pref_shortcut_layout_title"
+                            android:textStyle="bold"
+                            android:textColor="@color/on_surface"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/pref_shortcut_layout_desc"
+                            android:textSize="12sp"
+                            android:textColor="@color/on_surface_variant"
+                            android:layout_marginTop="2dp"
+                            android:layout_marginBottom="8dp" />
+
+                        <!-- Preset layout chips: QWERTY, QWERTZ, AZERTY, Custom -->
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/chip_group_shortcuts"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            app:singleSelection="true">
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chip_layout_qwerty"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="QWERTY"
+                                style="@style/Widget.Material3.Chip.Filter" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chip_layout_qwertz"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="QWERTZ"
+                                style="@style/Widget.Material3.Chip.Filter" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chip_layout_azerty"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="AZERTY"
+                                style="@style/Widget.Material3.Chip.Filter" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chip_layout_custom"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Custom"
+                                style="@style/Widget.Material3.Chip.Filter" />
+
+                        </com.google.android.material.chip.ChipGroup>
+
+                        <!-- Custom shortcut keys input -->
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/til_shortcut_keys"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:hint="@string/pref_shortcut_keys_hint"
+                            app:helperText="@string/pref_shortcut_keys_helper"
+                            app:boxBackgroundMode="outline">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/et_shortcut_keys"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textCapCharacters"
+                                android:fontFamily="monospace"
+                                android:textSize="14sp" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <!-- Live Mapping Preview -->
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/pref_shortcut_mapping_preview_title"
+                            android:textSize="11sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/primary"
+                            android:layout_marginTop="10dp" />
+
+                        <TextView
+                            android:id="@+id/tv_shortcut_mapping_preview"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="monospace"
+                            android:textSize="12sp"
+                            android:textColor="@color/on_surface"
+                            android:background="#10000000"
+                            android:padding="8dp"
+                            android:layout_marginTop="4dp" />
+
+                    </LinearLayout>
 
                     <!-- Default Uppercase switch -->
                     <com.google.android.material.materialswitch.MaterialSwitch

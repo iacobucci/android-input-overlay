@@ -11,6 +11,9 @@ import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
+import android.text.Editable
+import android.text.TextWatcher
+import android.view.View
 import android.view.accessibility.AccessibilityManager
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -18,8 +21,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.inputoverlay.R
 import com.inputoverlay.databinding.ActivityMainBinding
+import com.inputoverlay.model.PresetData
 import com.inputoverlay.service.InputOverlayAccessibilityService
 import com.inputoverlay.service.OverlayService
+import com.inputoverlay.utils.KeyboardShortcutHelper
 import com.inputoverlay.utils.OverlayPreferences
 
 class MainActivity : AppCompatActivity() {
@@ -128,14 +133,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.switchKeyboardShortcuts.isChecked = prefs.isKeyboardShortcutsEnabled
+        binding.layoutShortcutConfig.visibility = if (prefs.isKeyboardShortcutsEnabled) View.VISIBLE else View.GONE
         binding.switchKeyboardShortcuts.setOnCheckedChangeListener { _, isChecked ->
             prefs.isKeyboardShortcutsEnabled = isChecked
+            binding.layoutShortcutConfig.visibility = if (isChecked) View.VISIBLE else View.GONE
         }
 
         binding.switchDefaultUpper.isChecked = prefs.isDefaultUppercase
-        binding.switchDefaultUpper.setOnCheckedChangeListener { _, isChecked ->
-            prefs.isDefaultUppercase = isChecked
-        }
 
         // Presets Chips
         when (prefs.defaultPresetId) {
@@ -145,6 +149,79 @@ class MainActivity : AppCompatActivity() {
             "typography" -> binding.chipSymbols.isChecked = true
             else -> binding.chipItalian.isChecked = true
         }
+
+        // Live preview update helper
+        fun updateShortcutPreview() {
+            val currentPalette = PresetData.findCategoryById(prefs.defaultPresetId)
+            val currentShortcuts = KeyboardShortcutHelper.parseShortcutKeys(binding.etShortcutKeys.text?.toString())
+            val chars = currentPalette.items.map { it.getDisplay(prefs.isDefaultUppercase) }
+            binding.tvShortcutMappingPreview.text = KeyboardShortcutHelper.formatMappingPreview(currentShortcuts, chars)
+        }
+
+        // Setup shortcut keys input and layout selection
+        binding.etShortcutKeys.setText(prefs.shortcutKeys)
+
+        when (prefs.shortcutLayout) {
+            KeyboardShortcutHelper.LAYOUT_QWERTZ -> binding.chipLayoutQwertz.isChecked = true
+            KeyboardShortcutHelper.LAYOUT_AZERTY -> binding.chipLayoutAzerty.isChecked = true
+            KeyboardShortcutHelper.LAYOUT_CUSTOM -> binding.chipLayoutCustom.isChecked = true
+            else -> binding.chipLayoutQwerty.isChecked = true
+        }
+
+        updateShortcutPreview()
+
+        binding.switchDefaultUpper.setOnCheckedChangeListener { _, isChecked ->
+            prefs.isDefaultUppercase = isChecked
+            updateShortcutPreview()
+        }
+
+        var isUpdatingTextInternally = false
+        binding.chipGroupShortcuts.setOnCheckedStateChangeListener { _, checkedIds ->
+            if (checkedIds.isEmpty() || isUpdatingTextInternally) return@setOnCheckedStateChangeListener
+            val selectedLayout = when (checkedIds.first()) {
+                R.id.chip_layout_qwertz -> KeyboardShortcutHelper.LAYOUT_QWERTZ
+                R.id.chip_layout_azerty -> KeyboardShortcutHelper.LAYOUT_AZERTY
+                R.id.chip_layout_custom -> KeyboardShortcutHelper.LAYOUT_CUSTOM
+                else -> KeyboardShortcutHelper.LAYOUT_QWERTY
+            }
+            prefs.shortcutLayout = selectedLayout
+            if (selectedLayout != KeyboardShortcutHelper.LAYOUT_CUSTOM) {
+                val presetKeys = KeyboardShortcutHelper.getPresetShortcuts(selectedLayout).joinToString(", ")
+                isUpdatingTextInternally = true
+                binding.etShortcutKeys.setText(presetKeys)
+                prefs.shortcutKeys = presetKeys
+                isUpdatingTextInternally = false
+                updateShortcutPreview()
+            }
+        }
+
+        binding.etShortcutKeys.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                if (isUpdatingTextInternally) return
+                val text = s?.toString() ?: ""
+                prefs.shortcutKeys = text
+                val parsed = KeyboardShortcutHelper.parseShortcutKeys(text)
+
+                val matchedLayout = when (parsed) {
+                    KeyboardShortcutHelper.PRESET_QWERTY -> KeyboardShortcutHelper.LAYOUT_QWERTY
+                    KeyboardShortcutHelper.PRESET_QWERTZ -> KeyboardShortcutHelper.LAYOUT_QWERTZ
+                    KeyboardShortcutHelper.PRESET_AZERTY -> KeyboardShortcutHelper.LAYOUT_AZERTY
+                    else -> KeyboardShortcutHelper.LAYOUT_CUSTOM
+                }
+                prefs.shortcutLayout = matchedLayout
+                isUpdatingTextInternally = true
+                when (matchedLayout) {
+                    KeyboardShortcutHelper.LAYOUT_QWERTZ -> binding.chipLayoutQwertz.isChecked = true
+                    KeyboardShortcutHelper.LAYOUT_AZERTY -> binding.chipLayoutAzerty.isChecked = true
+                    KeyboardShortcutHelper.LAYOUT_CUSTOM -> binding.chipLayoutCustom.isChecked = true
+                    else -> binding.chipLayoutQwerty.isChecked = true
+                }
+                isUpdatingTextInternally = false
+                updateShortcutPreview()
+            }
+        })
 
         binding.chipGroupPresets.setOnCheckedStateChangeListener { _, checkedIds ->
             if (checkedIds.isEmpty()) return@setOnCheckedStateChangeListener
@@ -156,6 +233,7 @@ class MainActivity : AppCompatActivity() {
                 else -> "italian"
             }
             prefs.defaultPresetId = selectedPreset
+            updateShortcutPreview()
             Toast.makeText(this, "Default palette set to: $selectedPreset", Toast.LENGTH_SHORT).show()
         }
     }

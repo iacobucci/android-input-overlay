@@ -76,8 +76,8 @@ class InputOverlayAccessibilityService : AccessibilityService() {
                 return true
             }
 
-            // Keyboard row: Q W E R T Y U I O P (supports SHIFT + Q/W/E/R/T/Y for uppercase accents)
-            val charIndex = getKeyboardRowIndex(event.keyCode)
+            // Configured keyboard shortcuts (supports layouts like QWERTZ, QWERTY, AZERTY, custom, and SHIFT for uppercase)
+            val charIndex = overlay.getShortcutIndex(event)
             if (charIndex != -1) {
                 if (event.action == KeyEvent.ACTION_DOWN) {
                     val isShift = event.isShiftPressed || (event.metaState and KeyEvent.META_CAPS_LOCK_ON) != 0
@@ -87,22 +87,6 @@ class InputOverlayAccessibilityService : AccessibilityService() {
             }
         }
         return super.onKeyEvent(event)
-    }
-
-    private fun getKeyboardRowIndex(keyCode: Int): Int {
-        return when (keyCode) {
-            KeyEvent.KEYCODE_Q -> 0
-            KeyEvent.KEYCODE_W -> 1
-            KeyEvent.KEYCODE_E -> 2
-            KeyEvent.KEYCODE_R -> 3
-            KeyEvent.KEYCODE_T -> 4
-            KeyEvent.KEYCODE_Y -> 5
-            KeyEvent.KEYCODE_U -> 6
-            KeyEvent.KEYCODE_I -> 7
-            KeyEvent.KEYCODE_O -> 8
-            KeyEvent.KEYCODE_P -> 9
-            else -> -1
-        }
     }
 
     /**

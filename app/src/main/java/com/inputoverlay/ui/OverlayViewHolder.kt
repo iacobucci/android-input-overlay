@@ -13,6 +13,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import com.inputoverlay.R
 import com.inputoverlay.model.SymbolCategory
+import com.inputoverlay.utils.KeyboardShortcutHelper
 import com.inputoverlay.utils.OverlayPreferences
 
 class OverlayViewHolder(
@@ -38,6 +39,7 @@ class OverlayViewHolder(
     fun bind(
         category: SymbolCategory,
         isUppercase: Boolean,
+        shortcuts: List<String> = prefs.getShortcutList(),
         onCharacterSelected: (String) -> Unit,
         onShiftToggled: (Boolean) -> Unit,
         onCategorySwitchRequested: () -> Unit,
@@ -62,7 +64,7 @@ class OverlayViewHolder(
             onCloseRequested()
         }
 
-        // Populate character buttons with QWERTYUIOP shortcuts
+        // Populate character buttons with configured shortcuts
         containerSymbols.removeAllViews()
         val inflater = LayoutInflater.from(context)
         val showShortcuts = prefs.isKeyboardShortcutsEnabled
@@ -79,9 +81,9 @@ class OverlayViewHolder(
                 onCharacterSelected(char)
             }
 
-            if (showShortcuts && index < ROW_SHORTCUTS.size) {
+            if (showShortcuts && index < shortcuts.size) {
                 tvShortcut.visibility = View.VISIBLE
-                tvShortcut.text = ROW_SHORTCUTS[index]
+                tvShortcut.text = shortcuts[index]
             } else {
                 tvShortcut.visibility = View.GONE
             }
@@ -104,7 +106,7 @@ class OverlayViewHolder(
                         return@setOnKeyListener true
                     }
                     else -> {
-                        val rowIdx = getKeyboardRowIndex(keyCode)
+                        val rowIdx = KeyboardShortcutHelper.findShortcutIndex(event, shortcuts)
                         if (rowIdx != -1 && rowIdx < category.items.size) {
                             val isShift = event.isShiftPressed || (event.metaState and KeyEvent.META_CAPS_LOCK_ON) != 0
                             val uppercase = if (isShift) true else isUppercase
@@ -116,22 +118,6 @@ class OverlayViewHolder(
                 }
             }
             false
-        }
-    }
-
-    private fun getKeyboardRowIndex(keyCode: Int): Int {
-        return when (keyCode) {
-            KeyEvent.KEYCODE_Q -> 0
-            KeyEvent.KEYCODE_W -> 1
-            KeyEvent.KEYCODE_E -> 2
-            KeyEvent.KEYCODE_R -> 3
-            KeyEvent.KEYCODE_T -> 4
-            KeyEvent.KEYCODE_Y -> 5
-            KeyEvent.KEYCODE_U -> 6
-            KeyEvent.KEYCODE_I -> 7
-            KeyEvent.KEYCODE_O -> 8
-            KeyEvent.KEYCODE_P -> 9
-            else -> -1
         }
     }
 
@@ -181,6 +167,6 @@ class OverlayViewHolder(
     }
 
     companion object {
-        val ROW_SHORTCUTS = listOf("Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P")
+        val ROW_SHORTCUTS = KeyboardShortcutHelper.DEFAULT_SHORTCUTS
     }
 }

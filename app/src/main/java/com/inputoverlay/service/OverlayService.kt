@@ -14,6 +14,7 @@ import android.os.IBinder
 import android.provider.Settings
 import android.util.Log
 import android.view.Gravity
+import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.WindowManager
 import androidx.core.app.NotificationCompat
@@ -22,6 +23,7 @@ import com.inputoverlay.model.PresetData
 import com.inputoverlay.model.SymbolCategory
 import com.inputoverlay.ui.MainActivity
 import com.inputoverlay.ui.OverlayViewHolder
+import com.inputoverlay.utils.KeyboardShortcutHelper
 import com.inputoverlay.utils.OverlayPreferences
 import com.inputoverlay.utils.TextInjector
 
@@ -36,6 +38,8 @@ class OverlayService : Service() {
     private var currentCategory: SymbolCategory = PresetData.ITALIAN_ACCENTS
     private var isUppercase: Boolean = false
     private var isVisible: Boolean = false
+    private var activeShortcuts: List<String> = emptyList()
+    private var customShortcutsExtra: List<String>? = null
 
     val isOverlayVisible: Boolean
         get() = isVisible
@@ -47,6 +51,7 @@ class OverlayService : Service() {
         prefs = OverlayPreferences(this)
         isUppercase = prefs.isDefaultUppercase
         currentCategory = PresetData.findCategoryById(prefs.defaultPresetId)
+        activeShortcuts = prefs.getShortcutList()
         createNotificationChannel()
     }
 
@@ -103,6 +108,16 @@ class OverlayService : Service() {
                 "toggle" -> isUppercase = !isUppercase
             }
         }
+
+        // Shortcuts & Layout extras
+        val shortcutsExtra = intent.getStringExtra(EXTRA_SHORTCUTS)
+        val layoutExtra = intent.getStringExtra(EXTRA_LAYOUT)
+        customShortcutsExtra = when {
+            !shortcutsExtra.isNullOrBlank() -> KeyboardShortcutHelper.parseShortcutKeys(shortcutsExtra)
+            !layoutExtra.isNullOrBlank() -> KeyboardShortcutHelper.getPresetShortcuts(layoutExtra)
+            else -> null
+        }
+        activeShortcuts = customShortcutsExtra ?: prefs.getShortcutList()
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -110,6 +125,10 @@ class OverlayService : Service() {
         if (!Settings.canDrawOverlays(this)) {
             Log.e(TAG, "Cannot draw overlay: SYSTEM_ALERT_WINDOW permission not granted")
             return
+        }
+
+        if (customShortcutsExtra == null) {
+            activeShortcuts = prefs.getShortcutList()
         }
 
         if (isVisible && overlayViewHolder != null) {
@@ -183,6 +202,7 @@ class OverlayService : Service() {
         overlayViewHolder?.bind(
             category = currentCategory,
             isUppercase = isUppercase,
+            shortcuts = activeShortcuts,
             onCharacterSelected = { char ->
                 TextInjector.injectDirectly(this, char, currentCategory.id, prefs)
                 if (prefs.isAutoDismissEnabled) {
@@ -201,6 +221,11 @@ class OverlayService : Service() {
                 hideOverlay()
             }
         )
+    }
+
+    fun getShortcutIndex(event: KeyEvent): Int {
+        if (!prefs.isKeyboardShortcutsEnabled) return -1
+        return KeyboardShortcutHelper.findShortcutIndex(event, activeShortcuts)
     }
 
     fun selectCharacterByIndex(index: Int, forceUppercase: Boolean? = null) {
@@ -311,6 +336,8 @@ class OverlayService : Service() {
 
         const val EXTRA_CATEGORY = "category"
         const val EXTRA_CHARACTERS = "characters"
+        const val EXTRA_SHORTCUTS = "shortcuts"
+        const val EXTRA_LAYOUT = "layout"
         const val EXTRA_CASE = "case"
         const val EXTRA_AUTO_DISMISS = "auto_dismiss"
         const val EXTRA_POSITION = "position"
