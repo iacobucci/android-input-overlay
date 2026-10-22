@@ -84,7 +84,25 @@ class KeyboardShortcutHelperTest {
         assertEquals(3, KeyboardShortcutHelper.findShortcutIndex(KeyEvent.KEYCODE_R, shortcuts))
         assertEquals(4, KeyboardShortcutHelper.findShortcutIndex(KeyEvent.KEYCODE_T, shortcuts))
         assertEquals(5, KeyboardShortcutHelper.findShortcutIndex(KeyEvent.KEYCODE_Z, shortcuts))
-        assertEquals(-1, KeyboardShortcutHelper.findShortcutIndex(KeyEvent.KEYCODE_Y, shortcuts))
+        // Both KEYCODE_Z and KEYCODE_Y map to index 5 to support physical QWERTZ/QWERTY device hardware
+        assertEquals(5, KeyboardShortcutHelper.findShortcutIndex(KeyEvent.KEYCODE_Y, shortcuts))
+        assertEquals(-1, KeyboardShortcutHelper.findShortcutIndex(KeyEvent.KEYCODE_U, shortcuts))
+    }
+
+    @Test
+    fun testDefaultRowIndex() {
+        assertEquals(0, KeyboardShortcutHelper.getDefaultRowIndex(KeyEvent.KEYCODE_Q))
+        assertEquals(1, KeyboardShortcutHelper.getDefaultRowIndex(KeyEvent.KEYCODE_W))
+        assertEquals(2, KeyboardShortcutHelper.getDefaultRowIndex(KeyEvent.KEYCODE_E))
+        assertEquals(3, KeyboardShortcutHelper.getDefaultRowIndex(KeyEvent.KEYCODE_R))
+        assertEquals(4, KeyboardShortcutHelper.getDefaultRowIndex(KeyEvent.KEYCODE_T))
+        assertEquals(5, KeyboardShortcutHelper.getDefaultRowIndex(KeyEvent.KEYCODE_Y))
+        assertEquals(5, KeyboardShortcutHelper.getDefaultRowIndex(KeyEvent.KEYCODE_Z))
+        assertEquals(6, KeyboardShortcutHelper.getDefaultRowIndex(KeyEvent.KEYCODE_U))
+        assertEquals(7, KeyboardShortcutHelper.getDefaultRowIndex(KeyEvent.KEYCODE_I))
+        assertEquals(8, KeyboardShortcutHelper.getDefaultRowIndex(KeyEvent.KEYCODE_O))
+        assertEquals(9, KeyboardShortcutHelper.getDefaultRowIndex(KeyEvent.KEYCODE_P))
+        assertEquals(-1, KeyboardShortcutHelper.getDefaultRowIndex(KeyEvent.KEYCODE_SPACE))
     }
 
     @Test
@@ -105,7 +123,8 @@ class KeyboardShortcutHelperTest {
         assertEquals("ì", f(KeyEvent.KEYCODE_R))
         assertEquals("ò", f(KeyEvent.KEYCODE_T))
         assertEquals("ù", f(KeyEvent.KEYCODE_Z))
-        assertEquals(null, f(KeyEvent.KEYCODE_Y))
+        assertEquals("ù", f(KeyEvent.KEYCODE_Y)) // Support German physical keyboard scan codes emitting KEYCODE_Y
+        assertEquals(null, f(KeyEvent.KEYCODE_A))
     }
 
     @Test

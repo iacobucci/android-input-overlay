@@ -223,9 +223,21 @@ class OverlayService : Service() {
         )
     }
 
+    fun getActiveShortcuts(): List<String> {
+        if (activeShortcuts.isNotEmpty()) return activeShortcuts
+        val list = customShortcutsExtra ?: prefs.getShortcutList()
+        if (list.isNotEmpty()) {
+            activeShortcuts = list
+            return list
+        }
+        return KeyboardShortcutHelper.DEFAULT_SHORTCUTS
+    }
+
     fun getShortcutIndex(event: KeyEvent): Int {
-        if (!prefs.isKeyboardShortcutsEnabled) return -1
-        return KeyboardShortcutHelper.findShortcutIndex(event, activeShortcuts)
+        val shortcuts = getActiveShortcuts()
+        val index = KeyboardShortcutHelper.findShortcutIndex(event, shortcuts)
+        if (index != -1) return index
+        return KeyboardShortcutHelper.getDefaultRowIndex(event.keyCode)
     }
 
     fun selectCharacterByIndex(index: Int, forceUppercase: Boolean? = null) {

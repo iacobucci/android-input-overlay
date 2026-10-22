@@ -97,10 +97,26 @@ object KeyboardShortcutHelper {
         }
     }
 
+    fun getDefaultRowIndex(keyCode: Int): Int {
+        return when (keyCode) {
+            KeyEvent.KEYCODE_Q -> 0
+            KeyEvent.KEYCODE_W -> 1
+            KeyEvent.KEYCODE_E -> 2
+            KeyEvent.KEYCODE_R -> 3
+            KeyEvent.KEYCODE_T -> 4
+            KeyEvent.KEYCODE_Y, KeyEvent.KEYCODE_Z -> 5
+            KeyEvent.KEYCODE_U -> 6
+            KeyEvent.KEYCODE_I -> 7
+            KeyEvent.KEYCODE_O -> 8
+            KeyEvent.KEYCODE_P -> 9
+            else -> -1
+        }
+    }
+
     fun findShortcutIndex(event: KeyEvent, shortcuts: List<String>): Int {
         val keyCode = event.keyCode
 
-        // 1. Direct keyCode match
+        // 1. Direct keyCode match (supports QWERTZ / QWERTY interchangeability)
         val idxFromKeyCode = findShortcutIndex(keyCode, shortcuts)
         if (idxFromKeyCode != -1) {
             return idxFromKeyCode
@@ -120,7 +136,24 @@ object KeyboardShortcutHelper {
         } catch (_: Throwable) {
         }
 
-        // 3. Display label match
+        // 3. Match via KeyCharacterMap if available
+        try {
+            val kcm = event.keyCharacterMap
+            if (kcm != null) {
+                val chFromKcm = kcm.get(keyCode, 0).toChar().uppercaseChar()
+                if (chFromKcm != 0.toChar()) {
+                    for (i in shortcuts.indices) {
+                        val t = shortcuts[i].trim().uppercase()
+                        if (t.length == 1 && t[0] == chFromKcm) {
+                            return i
+                        }
+                    }
+                }
+            }
+        } catch (_: Throwable) {
+        }
+
+        // 4. Display label match
         try {
             val label = event.displayLabel.uppercaseChar()
             if (label != 0.toChar()) {
@@ -134,14 +167,31 @@ object KeyboardShortcutHelper {
         } catch (_: Throwable) {
         }
 
+        // 5. Fallback to standard top row keys (Q..P, mapping both Y and Z to index 5)
+        val defaultRow = getDefaultRowIndex(keyCode)
+        if (defaultRow != -1) {
+            return defaultRow
+        }
+
         return -1
     }
 
     fun findShortcutIndex(keyCode: Int, shortcuts: List<String>): Int {
-        // Direct keyCode comparison
+        if (shortcuts.isEmpty()) {
+            return getDefaultRowIndex(keyCode)
+        }
+
+        // Direct keyCode comparison (with QWERTZ / QWERTY interchangeability for the 6th row key)
         for (i in shortcuts.indices) {
-            val target = getKeyCodeForShortcut(shortcuts[i])
+            val token = shortcuts[i].trim().uppercase()
+            val target = getKeyCodeForShortcut(token)
             if (target != -1 && target == keyCode) {
+                return i
+            }
+            if (token == "Z" && keyCode == KeyEvent.KEYCODE_Y) {
+                return i
+            }
+            if (token == "Y" && keyCode == KeyEvent.KEYCODE_Z) {
                 return i
             }
         }

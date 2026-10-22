@@ -55,6 +55,8 @@ class InputOverlayAccessibilityService : AccessibilityService() {
         Log.d(TAG, "InputOverlayAccessibilityService destroyed")
     }
 
+    private var lastInterceptedKeyCode: Int = KeyEvent.KEYCODE_UNKNOWN
+
     override fun onKeyEvent(event: KeyEvent): Boolean {
         Log.d(TAG, "onKeyEvent: keyCode=${event.keyCode}, action=${event.action}, overlayVisible=${OverlayService.instance?.isOverlayVisible}")
         val overlay = OverlayService.instance
@@ -77,14 +79,23 @@ class InputOverlayAccessibilityService : AccessibilityService() {
             }
 
             // Configured keyboard shortcuts (supports layouts like QWERTZ, QWERTY, AZERTY, custom, and SHIFT for uppercase)
-            val charIndex = overlay.getShortcutIndex(event)
+            var charIndex = overlay.getShortcutIndex(event)
+            if (charIndex == -1) {
+                // Direct fallback to standard keyboard row (Q..P, mapping both Y and Z to index 5)
+                charIndex = com.inputoverlay.utils.KeyboardShortcutHelper.getDefaultRowIndex(event.keyCode)
+            }
+
             if (charIndex != -1) {
                 if (event.action == KeyEvent.ACTION_DOWN) {
+                    lastInterceptedKeyCode = event.keyCode
                     val isShift = event.isShiftPressed || (event.metaState and KeyEvent.META_CAPS_LOCK_ON) != 0
                     overlay.selectCharacterByIndex(charIndex, forceUppercase = if (isShift) true else null)
                 }
                 return true
             }
+        } else if (event.action == KeyEvent.ACTION_UP && lastInterceptedKeyCode != KeyEvent.KEYCODE_UNKNOWN && event.keyCode == lastInterceptedKeyCode) {
+            lastInterceptedKeyCode = KeyEvent.KEYCODE_UNKNOWN
+            return true
         }
         return super.onKeyEvent(event)
     }
