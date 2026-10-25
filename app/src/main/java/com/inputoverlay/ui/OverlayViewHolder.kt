@@ -77,9 +77,11 @@ class OverlayViewHolder(
             val tvShortcut = itemView.findViewById<TextView>(R.id.tv_shortcut)
 
             tvSymbol.text = char
-            tvSymbol.setOnClickListener {
+            val clickListener = View.OnClickListener {
                 onCharacterSelected(char)
             }
+            tvSymbol.setOnClickListener(clickListener)
+            itemView.setOnClickListener(clickListener)
 
             if (showShortcuts && index < shortcuts.size) {
                 tvShortcut.visibility = View.VISIBLE

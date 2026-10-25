@@ -5,6 +5,7 @@ import android.os.SystemClock
 import android.util.Log
 import android.view.KeyEvent
 import android.view.View
+import com.inputoverlay.utils.KeyboardShortcutHelper
 
 class InputOverlayImeService : InputMethodService() {
 
@@ -52,12 +53,47 @@ class InputOverlayImeService : InputMethodService() {
         return downSuccess && upSuccess
     }
 
+    private var lastInterceptedKeyCode: Int = KeyEvent.KEYCODE_UNKNOWN
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        // Pass through all hardware keys to the focused application
+        val overlay = OverlayService.instance
+        if (overlay != null && overlay.isOverlayVisible && event != null) {
+            // Dismiss on ESCAPE key
+            if (keyCode == KeyEvent.KEYCODE_ESCAPE) {
+                lastInterceptedKeyCode = keyCode
+                Log.d(TAG, "IME intercepted ESCAPE -> hiding overlay")
+                overlay.hideOverlay()
+                return true
+            }
+
+            // Toggle Shift on hardware Shift key
+            if (keyCode == KeyEvent.KEYCODE_SHIFT_LEFT || keyCode == KeyEvent.KEYCODE_SHIFT_RIGHT) {
+                overlay.toggleShift()
+                return true
+            }
+
+            // Configured keyboard shortcuts
+            var charIndex = overlay.getShortcutIndex(event)
+            if (charIndex == -1) {
+                charIndex = KeyboardShortcutHelper.getDefaultRowIndex(keyCode)
+            }
+
+            if (charIndex != -1) {
+                lastInterceptedKeyCode = keyCode
+                val isShift = event.isShiftPressed || (event.metaState and KeyEvent.META_CAPS_LOCK_ON) != 0
+                Log.d(TAG, "IME intercepted shortcut keyCode=$keyCode -> index=$charIndex")
+                overlay.selectCharacterByIndex(charIndex, forceUppercase = if (isShift) true else null)
+                return true
+            }
+        }
         return super.onKeyDown(keyCode, event)
     }
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
+        if (lastInterceptedKeyCode != KeyEvent.KEYCODE_UNKNOWN && keyCode == lastInterceptedKeyCode) {
+            lastInterceptedKeyCode = KeyEvent.KEYCODE_UNKNOWN
+            return true
+        }
         return super.onKeyUp(keyCode, event)
     }
 

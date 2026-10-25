@@ -64,6 +64,7 @@ class InputOverlayAccessibilityService : AccessibilityService() {
             // Dismiss on ESCAPE key
             if (event.keyCode == KeyEvent.KEYCODE_ESCAPE) {
                 if (event.action == KeyEvent.ACTION_DOWN) {
+                    lastInterceptedKeyCode = event.keyCode
                     Log.d(TAG, "Intercepted ESCAPE -> hiding overlay")
                     overlay.hideOverlay()
                 }
